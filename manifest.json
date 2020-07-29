@@ -1,0 +1,32 @@
+{
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:4200/*",
+        "*://sign-language-detector.web.app/*",
+        "*://meet.google.com/*",
+        "*://www.onlinemictest.com/*"
+      ],
+      "js": [
+        "dist/main.js"
+      ],
+      "all_frames": false,
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "128": "assets/logo.png",
+    "48": "assets/logo.png",
+    "16": "assets/logo.png"
+  },
+  "manifest_version": 2,
+  "name": "Static Microphone Noise",
+  "description": "Static Microphone Noise transmits static noise through your microphone",
+  "permissions": [
+    "storage"
+  ],
+  "version": "0.0.1",
+  "web_accessible_resources": [
+    "dist/audio-worklet.js"
+  ]
+}

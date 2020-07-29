@@ -1,0 +1,21 @@
+{
+  "name": "mic-static",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "lint": "tslint --project tsconfig.json",
+    "build": "tsc",
+    "build:watch": "tsc -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmitMY/mic-static.git"
+  },
+  "author": "Amit Moryossef",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AmitMY/mic-static/issues"
+  },
+  "homepage": "https://github.com/AmitMY/mic-static#readme"
+}
