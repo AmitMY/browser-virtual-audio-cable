@@ -1,5 +1,5 @@
 {
-  "name": "mic-static",
+  "name": "vac",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/AmitMY/mic-static/issues"
   },
-  "homepage": "https://github.com/AmitMY/mic-static#readme"
+  "homepage": "https://github.com/AmitMY/mic-static#readme",
+  "devDependencies": {
+    "@types/chrome": "0.0.122"
+  }
 }

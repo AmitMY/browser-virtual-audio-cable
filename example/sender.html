@@ -1,0 +1,20 @@
+<h1>Audio Sender</h1>
+
+<script>
+    async function main() {
+        vac.start();
+
+        console.log(vac.source);
+
+        const oscillator = vac.audioCtx.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(440, vac.audioCtx.currentTime); // value in hertz
+        oscillator.connect(vac.source);
+        oscillator.start();
+
+        console.log("Connected an audio stream");
+    }
+
+    main();
+</script>
+

@@ -2,28 +2,46 @@
   "content_scripts": [
     {
       "matches": [
-        "http://localhost:4200/*",
+        "http://localhost:*/*",
         "*://sign-language-detector.web.app/*",
         "*://meet.google.com/*",
         "*://www.onlinemictest.com/*"
       ],
       "js": [
-        "dist/main.js"
+        "dist/main.js",
+        "dist/content-script.js"
       ],
       "all_frames": false,
       "run_at": "document_start"
     }
   ],
+  "background": {
+    "scripts": [
+      "dist/dispatcher.js"
+    ]
+  },
+  "externally_connectable": {
+    "ids": [
+      "*"
+    ],
+    "matches": [
+      "http://localhost:*/*",
+      "*://sign-language-detector.web.app/*",
+      "*://meet.google.com/*",
+      "*://www.onlinemictest.com/*"
+    ]
+  },
   "icons": {
     "128": "assets/logo.png",
     "48": "assets/logo.png",
     "16": "assets/logo.png"
   },
   "manifest_version": 2,
-  "name": "Static Microphone Noise",
-  "description": "Static Microphone Noise transmits static noise through your microphone",
+  "name": "Virtual Audio Cable",
+  "description": "Virtual Audio Cable transmits audio streams between tabs, into the microphone",
   "permissions": [
-    "storage"
+    "activeTab",
+    "tabs"
   ],
   "version": "0.0.1",
   "web_accessible_resources": [

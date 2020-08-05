@@ -12,6 +12,9 @@
     "lib": [
       "esnext",
       "dom"
+    ],
+    "typeRoots": [
+      "node_modules/@types"
     ]
   },
   "compileOnSave": true,
@@ -22,11 +25,5 @@
   "exclude": [
     "node_modules",
     "**/*.spec.ts"
-  ],
-  "files": [
-    "src/dom.audio-worklet.d.ts"
-  ],
-  "types": [
-    "src/dom.audio-worklet.d.ts"
   ]
 }

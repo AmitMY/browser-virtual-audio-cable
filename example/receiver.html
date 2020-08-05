@@ -1,0 +1,15 @@
+<h1>Audio Receiver</h1>
+
+<audio id="audio" autoplay controls></audio>
+
+<script>
+    async function main() {
+        const audio = document.querySelector("#audio");
+        audio.srcObject = vac.destination.stream;
+
+        console.log("Connected audio");
+    }
+
+    main();
+</script>
+
