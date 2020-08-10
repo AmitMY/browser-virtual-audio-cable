@@ -19,24 +19,25 @@ function main() {
         // To make sure the handshake follows the correct sequence, all promises should be chained
         sequencePromise = Promise.resolve();
 
-        constructor(private tabId: string, private vac: VirtualAudioController, stream?: MediaStream) {
-            // Listen to remote data channel
-            this.connection.addEventListener('datachannel', e => this.remoteDataChannel = e.channel);
-
-            // Add remote tracks
-            this.connection.addEventListener('track', e => this.setTracks(e.streams));
-
-            // Transmit stream if need be
-            if (stream) {
-                stream.getTracks().forEach(track => this.connection.addTrack(track, stream));
-            }
-
+        constructor(private tabId: string, private vac: VirtualAudioController) {
             this.connect();
         }
 
+        sendTrack(stream: MediaStream) {
+            stream.getTracks().forEach(track => this.connection.addTrack(track, stream));
+        }
+
+        listeners: any = {}
+
         connect() {
+            // Listen to remote data channel
+            this.listeners.datachannel = (e: any) => this.remoteDataChannel = e.channel;
+
+            // Add remote tracks
+            this.listeners.track = (e: any) => this.setTracks(e.streams);
+
             // Send ICE candidates
-            this.connection.addEventListener('icecandidate', e => {
+            this.listeners.icecandidate = (e: any) => {
                 log('icecandidate', e.candidate);
 
                 if (e.candidate) {
@@ -45,10 +46,10 @@ function main() {
                 } else {
                     // All ICE candidates have been sent
                 }
-            });
+            };
 
             // Send local description
-            this.connection.addEventListener('negotiationneeded', async e => {
+            this.listeners.negotiationneeded = async (e: any) => {
                 log('negotiationneeded');
 
                 const offer = await this.connection.createOffer();
@@ -56,7 +57,18 @@ function main() {
                     await this.connection.setLocalDescription(offer);
                     this.sendMessage({sdp: this.connection.localDescription})
                 }
-            });
+            };
+
+            for(const [key, listener] of Object.entries(this.listeners)) {
+                this.connection.addEventListener(key as any, listener as any);
+            }
+        }
+
+        disconnect() {
+            for(const [key, listener] of Object.entries(this.listeners)) {
+                this.connection.removeEventListener(key as any, listener as any);
+            }
+            this.connection.close();
         }
 
         async setDescription(sdp: RTCSessionDescriptionInit) {
@@ -87,23 +99,32 @@ function main() {
     class VirtualAudioController {
         peers: { [key: string]: VACPeer } = {}; // Key is tab ID
 
-        audioCtx = new AudioContext();
-        source = this.audioCtx.createMediaStreamDestination(); // Stream to optionally transmit to peers
-        destination = this.audioCtx.createMediaStreamDestination(); // Stream getting from peers
+        audioCtx!: AudioContext;
+        source!: MediaStreamAudioDestinationNode; // Stream to optionally transmit to peers
+        destination!: MediaStreamAudioDestinationNode; // Stream getting from peers
 
         isSource = false; // Is this tab transmitting audio?
 
+        initialized!: Promise<any>;
+
         constructor() {
-            // if this class is created before page load, AudioContext is paused.
-            const resumeListener = () => {
-                log('Resume audioCtx');
-                window.removeEventListener('click', resumeListener);
-                return this.audioCtx.resume();
-            };
-            window.addEventListener('click', resumeListener)
+            this.initialized = new Promise(resolve => {
+                window.addEventListener('load', () => {
+                    this.init();
+                    resolve();
+                });
+            })
         }
 
-        addStream(stream: MediaStream) {
+        init() {
+            this.audioCtx = new AudioContext();
+            this.source = this.audioCtx.createMediaStreamDestination();
+            this.destination = this.audioCtx.createMediaStreamDestination();
+        }
+
+        async addStream(stream: MediaStream) {
+            await this.initialized;
+
             const source = this.audioCtx.createMediaStreamSource(stream);
             source.connect(this.destination as MediaStreamAudioDestinationNode);
         }
@@ -127,19 +148,37 @@ function main() {
         newPeer(tabId: string) {
             log('newPeer', tabId);
 
-            this.peers[tabId] = new VACPeer(tabId, this, this.isSource ? this.source.stream : undefined);
+            if (tabId in this.peers) {
+                log('Closing previous peer', tabId);
+                this.peers[tabId].disconnect();
+            }
+
+            this.peers[tabId] = new VACPeer(tabId, this);
+            if(this.isSource) {
+                this.peers[tabId].sendTrack(this.source.stream);
+            }
         }
 
         async onMessage(msg: any) {
             log('onMessage', msg);
 
             const tabId = String(msg.from);
+
+            if (tabId in this.peers && 'transmitting' in msg && !msg.transmitting) {
+                this.peers[tabId].disconnect();
+                delete this.peers[tabId];
+                return;
+            }
+
             if (!(tabId in this.peers)) {
                 this.newPeer(tabId);
             }
 
             const peer = this.peers[tabId] as VACPeer;
 
+            // if(msg.transmitting) {
+            //     peer.sendMessage({receiving: true});
+            // }
             if (msg.sdp) {
                 await peer.setDescription(msg.sdp)
             }
@@ -148,9 +187,16 @@ function main() {
             }
         }
 
+        sync() {
+            // Just transmit sync message to know if some process can send us audio
+            messageExtension({sync: true});
+        }
+
         // If a tab wants to transmit audio, it should call start, which establishes a connection with all other tabs
         // Calling it multiple times does not create duplicate connections
-        start() {
+        async start() {
+            await this.initialized;
+
             log('start');
 
             // TODO remove
@@ -161,8 +207,13 @@ function main() {
             oscillator.connect(this.source);
             oscillator.start();
 
+            // Send track to all existing peers
+            for(const peer of Object.values(this.peers)) {
+                peer.sendTrack(this.source.stream);
+            }
+
             this.isSource = true;
-            messageExtension({start: true});
+            messageExtension({transmitting: true});
         }
 
         // Kills all current peer connections
@@ -170,16 +221,19 @@ function main() {
             log('stop');
             this.isSource = false;
             for (const peer of Object.values(this.peers)) {
-                peer.connection.close();
+                peer.disconnect();
             }
             this.peers = {};
+            messageExtension({transmitting: false});
         }
     }
 
-    // Initialize Virtual Audio Controller
     const vac = new VirtualAudioController();
     (window as any).vac = vac;
 
+    vac.sync();
+
+    window.addEventListener('beforeunload', vac.stop.bind(vac));
 
     // Hijack getUserMedia streams
     const navigatorMediaDevicesGetUserMedia = navigator.mediaDevices.getUserMedia;
@@ -187,7 +241,7 @@ function main() {
         let stream = await navigatorMediaDevicesGetUserMedia.call(this, constraints);
         if (!constraints || constraints.audio) {
             try {
-                stream = vac.connectMicrophone(stream);
+                stream = (window as any).vac.connectMicrophone(stream);
             } catch (e) {
                 console.error('Failed to connect mic', e);
             }

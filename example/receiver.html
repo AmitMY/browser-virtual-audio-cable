@@ -4,6 +4,8 @@
 
 <script>
     async function main() {
+        await vac.initialized;
+
         const audio = document.querySelector("#audio");
         audio.srcObject = vac.destination.stream;
 

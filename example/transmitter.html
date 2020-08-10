@@ -1,18 +1,28 @@
-<h1>Audio Sender</h1>
+<h1>Audio Transmitter</h1>
+<audio id="audio" autoplay controls></audio>
 
 <script>
     async function main() {
+        await vac.initialized;
+
         vac.start();
+
+        const oscillator = vac.audioCtx.createOscillator();
 
         console.log(vac.source);
 
-        const oscillator = vac.audioCtx.createOscillator();
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(440, vac.audioCtx.currentTime); // value in hertz
         oscillator.connect(vac.source);
         oscillator.start();
 
         console.log("Connected an audio stream");
+
+
+        // const audio = document.querySelector("#audio");
+        // audio.srcObject = vac.source.stream;
+        //
+        // console.log("Connected audio");
     }
 
     main();
