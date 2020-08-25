@@ -59,13 +59,13 @@ function main() {
                 }
             };
 
-            for(const [key, listener] of Object.entries(this.listeners)) {
+            for (const [key, listener] of Object.entries(this.listeners)) {
                 this.connection.addEventListener(key as any, listener as any);
             }
         }
 
         disconnect() {
-            for(const [key, listener] of Object.entries(this.listeners)) {
+            for (const [key, listener] of Object.entries(this.listeners)) {
                 this.connection.removeEventListener(key as any, listener as any);
             }
             this.connection.close();
@@ -125,6 +125,9 @@ function main() {
         async addStream(stream: MediaStream) {
             await this.initialized;
 
+            // Workaround to solve bug where audio is muted
+            new Audio().srcObject = stream;
+
             const source = this.audioCtx.createMediaStreamSource(stream);
             source.connect(this.destination as MediaStreamAudioDestinationNode);
         }
@@ -154,7 +157,7 @@ function main() {
             }
 
             this.peers[tabId] = new VACPeer(tabId, this);
-            if(this.isSource) {
+            if (this.isSource) {
                 this.peers[tabId].sendTrack(this.source.stream);
             }
         }
@@ -208,7 +211,7 @@ function main() {
             oscillator.start();
 
             // Send track to all existing peers
-            for(const peer of Object.values(this.peers)) {
+            for (const peer of Object.values(this.peers)) {
                 peer.sendTrack(this.source.stream);
             }
 

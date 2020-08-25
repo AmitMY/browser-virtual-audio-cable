@@ -1,11 +1,10 @@
 <h1>Audio Transmitter</h1>
-<audio id="audio" autoplay controls></audio>
 
 <script>
     async function main() {
         await vac.initialized;
 
-        vac.start();
+        await vac.start();
 
         const oscillator = vac.audioCtx.createOscillator();
 
@@ -17,12 +16,6 @@
         oscillator.start();
 
         console.log("Connected an audio stream");
-
-
-        // const audio = document.querySelector("#audio");
-        // audio.srcObject = vac.source.stream;
-        //
-        // console.log("Connected audio");
     }
 
     main();
